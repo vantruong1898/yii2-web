@@ -15,7 +15,7 @@ composer require --prefer-dist izisoft/yii2-web "dev-master"
 * Thêm đoạn code sau vào components
 ```php
   'urlManager'=>[
-    				'class' => 'yii\web\UrlManager',
+    				'class' => 'izi\web\UrlManager',
     				'showScriptName' => false,
     				'enablePrettyUrl' => true,
     				'scriptUrl'=>'/index.php',
@@ -35,3 +35,5 @@ composer require --prefer-dist izisoft/yii2-web "dev-master"
 	 url: varchar -> Url trên thanh địa chỉ web
 
 	 route: varchar -> controller/action | action
+	 
+	 (thêm các thông tin khác mà bạn cần khai thác)
