@@ -32,5 +32,5 @@ composer require --prefer-dist izisoft/yii2-web "dev-master"
   ```
 * Tạo bảng slugs với thông tin cơ bản như sau:
 
-url: varchar --> Url trên thanh địa chỉ web
-route: varchar --> <controller>/<action> | <action>
+url: varchar -> Url trên thanh địa chỉ web
+route: varchar -> <controller>/<action> | <action>
