@@ -6,7 +6,7 @@
  * @email zinzinx8@gmail.com
  *
  */
-namespace izisoft\web;
+namespace izi\web;
 use Yii;
 use yii\db\Query;
 class Currencies extends \yii\db\ActiveRecord

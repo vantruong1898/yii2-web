@@ -1,5 +1,5 @@
 <?php
-namespace izisoft\web;
+namespace izi\web;
 defined('YII2_LOCALEURLS_TEST') || define('YII2_LOCALEURLS_TEST', false);
 use Yii;
 use yii\base\InvalidConfigException;
