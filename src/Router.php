@@ -15,19 +15,25 @@ class Router extends \yii\db\ActiveRecord
 	
 	*/
 	public $settings = [];
-	public $_adminRoute = ['admin','acp','apc','cpanel'];
+	public $_adminRoute = ['admin','acp','apc','cpanel'], $defaultRoute = 'site';
 	private $_router = '';
-	
+	protected $request;
 	public static function tableName(){
 	 	return '{{%slugs}}';
 	}
 	
 	public function __construct(){
+		$this->request = Yii::$app->request;
 		$this->registerServices();
 		//Yii::$app->request->url = '/about'; 
 	}
 	
 	protected function registerServices(){
+		
+		/**
+		 * Phân tích dữ liệu từ server header
+		 * 
+		 */
 		$s = $_SERVER;
 		$ssl = (!empty($s['HTTPS']) && $s['HTTPS'] == 'on') ? true:false;
 		$sp = strtolower($s['SERVER_PROTOCOL']);
@@ -47,13 +53,10 @@ class Router extends \yii\db\ActiveRecord
 		$d = array(
 				'FULL_URL'=>$url,
 				'URL_NO_PARAM'=> $a['scheme'].'://'.$a['host'].$port.$a['path'],
-				//'URL_PATH'=> $port.$a['path'],
 				'URL_WITH_PATH'=>$a['scheme'].'://'.$a['host'].$port.$a['path'],
-				'URL_NOT_SCHEME'=>$a['host'].$port.$a['path'],
-				
+				'URL_NOT_SCHEME'=>$a['host'].$port.$a['path'],				
 				'ABSOLUTE_DOMAIN'=>$a['scheme'].'://'.$a['host'],
-				'SITE_ADDRESS'=>\yii\helpers\Url::to('/'),
-				
+				'SITE_ADDRESS'=>\yii\helpers\Url::to('/'),				
 				'SCHEME'=>$a['scheme'],
 				'DOMAIN'=>$a['host'],
 				"__DOMAIN__"=>$a['host'],
@@ -66,10 +69,8 @@ class Router extends \yii\db\ActiveRecord
 		foreach($d as $k=>$v){
 			defined($k) or define($k,$v);
 		}
-		 
-		 
-		$r = \izisoft\router\Router::getShopFromDomain();
-		  
+		// Lấy thông tin shop từ domain đang chạy 		 
+		$r = $this->getShopFromDomain();		 	
 		$dma = false;
 		if(!empty($r)){
 			define ('SHOP_TIME_LEFT',countDownDayExpired($r['to_date']));
@@ -100,10 +101,14 @@ class Router extends \yii\db\ActiveRecord
 		// Get site config
 		
 		$this->settings = $this->getConfigs('SETTINGS',false,__SID__,false);
+		view2($this->settings,true);
 		if(!isset($this->settings['currency']['default'])){
-			\app\modules\admin\models\UserCurrency::setDefaultCurrency(1);
+			Yii::$app->c->setDefaultCurrency(1);
 			$this->settings = $this->getConfigs('SETTINGS',false,__SID__,false);
 		}
+		// Set param
+		Yii::$app->params['settings'] = $this->settings;
+		//
 		$suffix = isset($this->settings['url_manager']['suffix']) ? $this->settings['url_manager']['suffix']: '';
 		define('URL_SUFFIX', $suffix);
 		if(URL_SUFFIX != ""){
@@ -202,7 +207,7 @@ class Router extends \yii\db\ActiveRecord
 		//view2($this->_router,true);
 	 
 		if(__IS_ADMIN__){
-			require_once Yii::getAlias('@common') . '/functions/ad_function.php';
+			require_once Yii::getAlias('@common') . '/functions/admin_function.php';
 		}
 		
 		defined("CBASE_URL") or define('CBASE_URL', __IS_ADMIN__ ? ADMIN_ADDRESS : SITE_ADDRESS);
@@ -286,7 +291,7 @@ class Router extends \yii\db\ActiveRecord
 		 
 	}
 	
-	public static function getShopFromDomain($domain = __DOMAIN__){		
+	public function getShopFromDomain($domain = __DOMAIN__){		
 		$key = md5(session_id() . __DOMAIN__);
 		$config = Yii::$app->session->get($key);
 		
@@ -356,31 +361,7 @@ class Router extends \yii\db\ActiveRecord
 	}
 	
 	public function getConfigs($code = false, $lang = __LANG__,$sid=__SID__,$cached=true){
-		$langx = $lang == false ? 'all' : $lang;
-		$code = $code !== false ? $code : 'SITE_CONFIGS';
-		$config = Yii::$app->session->get('config');
-		if($cached && !isset($config['adLogin']) && isset($config['preload'][$code][$langx])
-				&& !empty($config['preload'][$code][$langx])){
-					return $config['preload'][$code][$langx];
-		}
-		
-		$query = (new Query())->select(['a.bizrule'])->from(['a'=>'{{%site_configs}}'])
-		->where(['a.code'=>$code]);
-		if($sid>0){
-			$query->andWhere(['a.sid'=>$sid]);
-		}
-		if($lang !== false){
-			$query->andWhere(['a.lang'=>$lang]);
-		}				
-		$j = $query->scalar();
-		if($code == 'VERSION'){
-			//var_dump($query->createCommand()->getRawSql());
-			//var_dump($j); exit;
-		}
-		$l = djson($j,true);
-		$config['preload'][$code][$langx] = $l;
-		Yii::$app->session->set('config', $config);
-		return $l;
+		return Yii::$app->idb-> getConfigs($code, $lang, $sid, $cached);
 	}
 	
 	public static function findByUrl($url = ''){

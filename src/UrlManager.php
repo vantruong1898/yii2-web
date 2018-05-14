@@ -159,7 +159,7 @@ class UrlManager extends BaseUrlManager
 		
 		
 		**/
-		$this->router = new \izisoft\router\Router();
+		$this->router = new \izi\web\Router();
 		//$this->router->init();		
 		
         if ($this->enableLocaleUrls && $this->languages) {
