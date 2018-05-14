@@ -1,7 +1,7 @@
 {
 	"name" : "izisoft/yii2-web",
 	"description" : "Router for Yii2",
-	"type" : "library",
+	"type" : "yii2-extension",
 	"version" : "2.0",
 	"license" : "BSD-3-Clause",
 	"authors" : [{
@@ -11,13 +11,17 @@
 			"role" : "Developer"
 		}
 	],
+	"support" : {
+		"issues" : "https://github.com/yiisoft/izisoft/yii2-web/issues",		
+		"source" : "https://github.com/yiisoft/izisoft/yii2-web"
+	},
 	"minimum-stability" : "dev",
 	"require" : {
 		"php" : ">=5.4.0"
 	},
 	"autoload" : {
 		"psr-4" : {
-			"izisoft\\yii2-web\\" : "src/"
+			"izi\\web\\" : "src"
 		}
 	}
 }
