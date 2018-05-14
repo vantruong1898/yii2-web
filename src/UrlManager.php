@@ -1,5 +1,5 @@
 <?php
-namespace izisoft\web;
+namespace izi\web;
 defined('YII2_LOCALEURLS_TEST') || define('YII2_LOCALEURLS_TEST', false);
 use Yii;
 use yii\base\InvalidConfigException;
@@ -159,7 +159,7 @@ class UrlManager extends BaseUrlManager
 		
 		
 		**/
-		$this->router = new \izisoft\router\Router();
+		$this->router = new \izi\web\Router();
 		//$this->router->init();		
 		
         if ($this->enableLocaleUrls && $this->languages) {

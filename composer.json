@@ -1,24 +1,27 @@
 {
-    "name": "izisoft/yii2-web",
-    "description": "Customize router for Yii2",
-    "type": "library",
+	"name" : "izisoft/yii2-web",
+	"description" : "Router for Yii2",
+	"type" : "yii2-extension",
 	"version" : "2.0",
-    "license": "BSD-3-Clause",
-    "authors":[
-        {
-            "name": "izisoft",
-            "email": "izisoft@iziweb.vn",
+	"license" : "BSD-3-Clause",
+	"authors" : [{
+			"name" : "izisoft",
+			"email" : "izisoft@iziweb.vn",
 			"homepage" : "https://iziweb.vn",
-			"role": "Developer"
-        }
-    ],	
-    "minimum-stability": "dev",
-	"require": {
-        "php": ">=5.4.0"
-    },
-    "autoload":{
-        "psr-4":{
-            "izisoft\\yii2-web\\": "src/"
-        }
-    }
+			"role" : "Developer"
+		}
+	],
+	"support" : {
+		"issues" : "https://github.com/yiisoft/izisoft/yii2-web/issues",		
+		"source" : "https://github.com/yiisoft/izisoft/yii2-web"
+	},
+	"minimum-stability" : "dev",
+	"require" : {
+		"php" : ">=5.4.0"
+	},
+	"autoload" : {
+		"psr-4" : {
+			"izi\\web\\" : "src"
+		}
+	}
 }
