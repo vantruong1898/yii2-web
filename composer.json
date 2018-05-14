@@ -7,15 +7,11 @@
     "authors":[
         {
             "name": "izisoft",
-            "email": "izisoft@iziweb.vn"
+            "email": "izisoft@iziweb.vn",
+			"homepage" : "https://iziweb.vn",
+			"role": "Developer"
         }
-    ],
-	"provides":[
-		{
-			"name": "izisoft",
-            "website": "https://iziweb.vn"
-		}
-	],
+    ],	
     "minimum-stability": "dev",
 	"require": {
         "php": ">=5.4.0"
