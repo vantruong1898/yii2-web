@@ -10,6 +10,12 @@
             "email": "izisoft@iziweb.vn"
         }
     ],
+	"provides":[
+		{
+			"name": "izisoft",
+            "website": "https://iziweb.vn"
+		}
+	],
     "minimum-stability": "dev",
 	"require": {
         "php": ">=5.4.0"
