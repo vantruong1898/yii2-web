@@ -1,9 +1,9 @@
-### yii2-web
+### Sơ lược về izisoft/yii2-web
 Tùy chỉnh bộ định tuyến Yii2 theo mô hình url 1 (hoặc nhiều) cấp
 
 	-> https://iziweb.vn/url-bai-viet
-
 	-> https://iziweb.vn/tin-tuc/url-bai-viet
+	-> https://iziweb.vn/tin-tuc/thoi-su/url-bai-viet
 
 ### Cài đặt
 composer require --prefer-dist izisoft/yii2-web "dev-master"
