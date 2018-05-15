@@ -14,7 +14,7 @@ class Router extends \yii\db\ActiveRecord
 	/*
 	
 	*/
-	public $settings = [];
+	public $settings = [], $slug = [];
 	public $_adminRoute = ['admin','acp','apc','cpanel'], $defaultRoute = 'site';
 	private $_router = '';
 	protected $request;
@@ -25,7 +25,6 @@ class Router extends \yii\db\ActiveRecord
 	public function __construct(){
 		$this->request = Yii::$app->request;
 		$this->registerServices();
-		//Yii::$app->request->url = '/about'; 
 	}
 	
 	protected function registerServices(){
@@ -43,9 +42,7 @@ class Router extends \yii\db\ActiveRecord
 		$host = isset($s['HTTP_X_FORWARDED_HOST']) ? $s['HTTP_X_FORWARDED_HOST'] : isset($s['HTTP_HOST']) ? $s['HTTP_HOST'] : $s['SERVER_NAME'];
 		$path = ($s['REQUEST_URI'] ? $s['REQUEST_URI'] : $_SERVER['HTTP_X_ORIGINAL_URL']);
 		$url = $protocol . '://' . $host . $port . $path;
-		$pattern = array('/index\.php\//','/index\.php/');
-		
-		
+		$pattern = array('/index\.php\//','/index\.php/');				
 		
 		$replacement = array('','');
 		$url = preg_replace($pattern, $replacement, $url);
@@ -101,7 +98,7 @@ class Router extends \yii\db\ActiveRecord
 		// Get site config
 		
 		$this->settings = $this->getConfigs('SETTINGS',false,__SID__,false);
-		view2($this->settings,true);
+		
 		if(!isset($this->settings['currency']['default'])){
 			Yii::$app->c->setDefaultCurrency(1);
 			$this->settings = $this->getConfigs('SETTINGS',false,__SID__,false);
@@ -275,6 +272,7 @@ class Router extends \yii\db\ActiveRecord
 			 
 		}		  
 		
+		
 		defined('__DETAIL_URL__') or define ('__DETAIL_URL__',$url);
 		
 		if(!__IS_ADMIN__){
@@ -288,7 +286,9 @@ class Router extends \yii\db\ActiveRecord
 			}
 			$this->setDefaultLanguage();
 		}
-		 
+		view2(__SID__);
+		view2($this->slug);
+		view2($url,true);
 	}
 	
 	public function getShopFromDomain($domain = __DOMAIN__){		
