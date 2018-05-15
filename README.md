@@ -1,5 +1,5 @@
 ### yii2-web
-Tùy biến bộ định tuyến Yii2, tùy chỉnh UrlManager
+Tùy chỉnh bộ định tuyến Yii2 theo mô hình url 1 cấp
 
 ### Cài đặt
 composer require --prefer-dist izisoft/yii2-web "dev-master"
