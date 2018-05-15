@@ -4,6 +4,13 @@ Tùy chỉnh bộ định tuyến Yii2 theo mô hình url 1 (hoặc nhiều) c�
 	-> https://iziweb.vn/url-bai-viet
 	-> https://iziweb.vn/tin-tuc/url-bai-viet
 	-> https://iziweb.vn/tin-tuc/thoi-su/url-bai-viet
+	<=>
+	-> https://iziweb.vn/site/news/url-bai-viet
+	[
+	controller: site,
+	action: news
+	id: url-bai-viet
+	]
 
 ### Cài đặt
 composer require --prefer-dist izisoft/yii2-web "dev-master"
