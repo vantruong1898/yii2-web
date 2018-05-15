@@ -15,22 +15,22 @@ composer require --prefer-dist izisoft/yii2-web "dev-master"
 * Thêm đoạn code sau vào components
 ```php
 	'urlManager'=>[
-    				'class' => 'izi\web\UrlManager',
-    				'showScriptName' => false,
-    				'enablePrettyUrl' => true,
-    				'scriptUrl'=>'/index.php',
-    				'rules' => [
-    						'/'=>'site/index',
-    						'<action:\w+>'=>'site/<action>',    						
-    						'<controller:\w+>/<action>'=>'<controller>/<action>'
-                ...
-            ]
+    	'class' => 'izi\web\UrlManager',
+    	'showScriptName' => false,
+    	'enablePrettyUrl' => true,
+    	'scriptUrl'=>'/index.php',
+    	'rules' => [
+    		'/'=>'site/index',
+    		'<action:\w+>'=>'site/<action>',    						
+    		'<controller:\w+>/<action>'=>'<controller>/<action>'
+            ...
+        ]
 	],
 	'c'=>[
-						'class'=>'izi\web\Currencies'
+		'class'=>'izi\web\Currencies'
 	],
 	'l'=>[
-						'class'=>'izi\web\Language'
+		'class'=>'izi\web\Language'
 	],
 	...
   ```
@@ -41,5 +41,7 @@ composer require --prefer-dist izisoft/yii2-web "dev-master"
 	route: varchar -> controller/action | action
 	 
 	(thêm các thông tin khác mà bạn cần khai thác)
-* Tạo bảng currency, bảng language /** Tự ngâm cứu nhé **/
+* Tạo bảng currency, bảng language 
+
+--- Updating ---
 	
