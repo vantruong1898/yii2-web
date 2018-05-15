@@ -10,11 +10,11 @@ composer require --prefer-dist izisoft/yii2-web "dev-master"
 * Thiết lập ngôn ngữ từ url
 * [Ext] Quản lý và cài đặt tiền tệ
 
-* ... [còn nữa]
+* ... [còn nữa cơ mà lười viết]
 ### Hướng dẫn sử dụng
 * Thêm đoạn code sau vào components
 ```php
-  'urlManager'=>[
+	'urlManager'=>[
     				'class' => 'izi\web\UrlManager',
     				'showScriptName' => false,
     				'enablePrettyUrl' => true,
@@ -25,15 +25,21 @@ composer require --prefer-dist izisoft/yii2-web "dev-master"
     						'<controller:\w+>/<action>'=>'<controller>/<action>'
                 ...
             ]
-  ],
-  'currencies'=>[
+	],
+	'c'=>[
 						'class'=>'izi\web\Currencies'
 	],
+	'l'=>[
+						'class'=>'izi\web\Language'
+	],
+	...
   ```
 * Tạo bảng slugs với thông tin cơ bản như sau:
 
-	 url: varchar -> Url trên thanh địa chỉ web
+	url: varchar -> Url trên thanh địa chỉ web
 
-	 route: varchar -> controller/action | action
+	route: varchar -> controller/action | action
 	 
-	 (thêm các thông tin khác mà bạn cần khai thác)
+	(thêm các thông tin khác mà bạn cần khai thác)
+* Tạo bảng currency, bảng language /** Tự ngâm cứu nhé **/
+	
