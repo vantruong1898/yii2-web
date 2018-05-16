@@ -151,15 +151,15 @@ class UrlManager extends BaseUrlManager
     protected $_processed = false;
     /**
      * @inheritdoc
-     */	 	
-	
+     */	
+    
     public function init()
     {
 		/**
 		
 		
 		**/
-		$this->router = new \izi\web\Router();
+    	\izi\web\Router::registerServices();
 		//$this->router->init();		
 		
         if ($this->enableLocaleUrls && $this->languages) {
