@@ -9,7 +9,7 @@
 namespace izi\web;
 use Yii;
 use yii\db\Query;
-class Router extends \yii\db\ActiveRecord
+class Router extends \yii\base\Component
 {
 	/*
 	
@@ -18,17 +18,18 @@ class Router extends \yii\db\ActiveRecord
 	public $_adminRoute = ['admin','acp','apc','cpanel'], $defaultRoute = 'site';
 	private $_router = '';
 	protected $request;
-	public static function tableName(){
-	 	return '{{%slugs}}';
+		 
+	 
+	public static function tableTemplete(){
+	 	return '{{%templetes}}';
 	}
 	
-	public function __construct(){
+	public function init(){
+		$this->bootstrap();
+	}
+	
+	protected function bootstrap(){
 		$this->request = Yii::$app->request;
-		$this->registerServices();
-	}
-	
-	protected function registerServices(){
-		
 		/**
 		 * Phân tích dữ liệu từ server header
 		 * 
@@ -67,7 +68,7 @@ class Router extends \yii\db\ActiveRecord
 			defined($k) or define($k,$v);
 		}
 		// Lấy thông tin shop từ domain đang chạy 		 
-		$r = $this->getShopFromDomain();		 	
+		$r = \izi\web\Shop::getDomainInfo();		 	
 		$dma = false;
 		if(!empty($r)){
 			define ('SHOP_TIME_LEFT',countDownDayExpired($r['to_date']));
@@ -97,11 +98,11 @@ class Router extends \yii\db\ActiveRecord
 		}
 		// Get site config
 		
-		$this->settings = $this->getConfigs('SETTINGS',false,__SID__,false);
+		$this->settings = Yii::$app->idb->getConfigs('SETTINGS',false,__SID__,false);
 		
 		if(!isset($this->settings['currency']['default'])){
 			Yii::$app->c->setDefaultCurrency(1);
-			$this->settings = $this->getConfigs('SETTINGS',false,__SID__,false);
+			$this->settings = Yii::$app->idb->getConfigs('SETTINGS',false,__SID__,false);
 		}
 		// Set param
 		Yii::$app->params['settings'] = $this->settings;
@@ -200,8 +201,6 @@ class Router extends \yii\db\ActiveRecord
 		}
 		//
 		$url = '';
-		
-		//view2($this->_router,true);
 	 
 		if(__IS_ADMIN__){
 			require_once Yii::getAlias('@common') . '/functions/admin_function.php';
@@ -212,46 +211,32 @@ class Router extends \yii\db\ActiveRecord
 		if(!empty($this->_router) && !__IS_ADMIN__){
 			
 			if(!in_array($this->_router[0], ['tag','tags'])){
-			foreach ($r = array_reverse($this->_router) as $url){
-				$s = $this->findByUrl($url);
-				if(!empty($s)){
-					$this->slug = $s;
-					 
-					if(isset($this->slug['checksum']) && $this->slug['checksum'] != "" 
-							&& $this->slug['checksum'] != md5(URL_PATH)){
-						// báo link sai						
-						$url1 = Yii::$app->zii->getUrl($s['url']);
-						if(md5($url1) == $s['checksum']){
-							$this->getResponse()->redirect($url1,301);
-						}else{
-							//$url = 'error';
-						}
+				foreach ($r = array_reverse($this->_router) as $url){
+					$s = \izi\web\Slug::findUrl($url);					 
+					if(!empty($s)){
+						$this->slug = $s;						 
+						
+						break;
+					}else{
+	
 					}
-					break;
-				}else{
-
 				}
-			}			 
 			}
 			
 		}
 		 
-		$pos = strpos(Yii::$app->request->url, '.');
-		//view2($this->request->url,true);
-		//view2($pos);
+		$pos = strpos(Yii::$app->request->url, '.');		
 		
 		if($pos !== false){
-			//view2($url);
 			$url = substr($url, 0,$pos);
-		}		
-		//view2($url);
+		}
 		
 		/**
 		 * Lay lang theo url 
 		 */					
 		
 		if(__IS_ADMIN__){
-			$this->setDefaultLanguage();
+			//Yii::$app->l->setDefaultLanguage();
 			foreach ($r = $this->_router as $url){ 
 				$this->slug = \app\izi\Slug::adminFindByUrl($url);				
 				break;				 
@@ -270,10 +255,12 @@ class Router extends \yii\db\ActiveRecord
 				*/
 			}
 			 
-		}		  
-		
-		
+		}else{
+			//Yii::$app->l->setDefaultLanguage();
+		}
+				
 		defined('__DETAIL_URL__') or define ('__DETAIL_URL__',$url);
+				
 		
 		if(!__IS_ADMIN__){
 			if(strlen(__DETAIL_URL__)>0){
@@ -282,33 +269,44 @@ class Router extends \yii\db\ActiveRecord
 				}
 			}	
 			if(!in_array(__DETAIL_URL__, ['ajax','sajax'])){
-				$this->redirect301();
+				\izi\web\Slug::setRedirect($this->slug); 
 			}
-			$this->setDefaultLanguage();
+			
 		}
-		view2(__SID__);
-		view2($this->slug);
-		view2($url,true);
-	}
-	
-	public function getShopFromDomain($domain = __DOMAIN__){		
-		$key = md5(session_id() . __DOMAIN__);
-		$config = Yii::$app->session->get($key);
+		Yii::$app->l->setDefaultLanguage();
+		//view2(\yii\helpers\Url::to(['/abc']));
+		/**
+		 * 
+		 */
+		Yii::$app->slug->validateSlug($this->slug); 
 		
-		if(!YII_DEBUG && !empty($config)){
-			return $config;
-		}else{
-			$config = static::find()
-			->select(['a.sid','b.status','b.code','a.is_admin','a.module','b.to_date','a.state'])
-			->from(['a'=>'{{%domain_pointer}}'])
-			->innerJoin(['b'=>'{{%shops}}'],'a.sid=b.id')
-			->where(['a.domain'=>__DOMAIN__])->asArray()->one();			
-			Yii::$app->session->set($key, $config);
-			return $config;
+		//view2(Yii::$app->slug->getUrl($this->slug['url']),true);
+		
+		if(isset($this->slug['checksum']) && $this->slug['checksum'] != ""
+				&& $this->slug['checksum'] != md5(URL_PATH)){
+					// báo link sai
+					$url1 = Yii::$app->zii->getUrl($s['url']);
+					if(md5($url1) == $s['checksum']){
+						Yii::$app->getResponse()->redirect($url1,301);
+					}else{
+						//$url = 'error';
+					}
 		}
+		//Yii::$app->s->config = Yii::$app->idb->getConfigs();
+		//view2(Yii::$app->s->config,true);
+		
+		//view2(__SID__);
+		//view2($this->slug);
+		//view2($url,true);
 	}
+		 
 
-	public static function getTempleteName($cached =  true){
+	/**
+	 * Get templete name
+	 * @param string $cached
+	 * @return \yii\db\ActiveRecord|array|NULL
+	 */
+	public function getTempleteName($cached =  true){
 		defined('__TEMPLETE_DOMAIN_STATUS__') or define('__TEMPLETE_DOMAIN_STATUS__', 1);
 		$config = Yii::$app->session->get('config');	
 		$c = __SID__ .'_'. PRIVATE_TEMPLETE;
@@ -358,20 +356,15 @@ class Router extends \yii\db\ActiveRecord
 			Yii::$app->session->set('config', $config);
 			return $r;
 		}
-	}
-	
-	public function getConfigs($code = false, $lang = __LANG__,$sid=__SID__,$cached=true){
-		return Yii::$app->idb-> getConfigs($code, $lang, $sid, $cached);
-	}
-	
-	public static function findByUrl($url = ''){
-		return static::find()->where(['url'=>$url,'sid'=>__SID__])->asArray()->one();
-	}
-	
+	}		
+		 	
+	/**
+	 * Check HTTPS && Redirect
+	 * @return boolean
+	 */
 	private function setHttpsMethod(){
 		if(isset(Yii::$site['seo']['ssl'])){
-			if(isset(Yii::$site['seo']['ssl'][DOMAIN_NOT_WWW])  && Yii::$site['seo']['ssl'][DOMAIN_NOT_WWW] == 'on'){
-				
+			if(isset(Yii::$site['seo']['ssl'][DOMAIN_NOT_WWW])  && Yii::$site['seo']['ssl'][DOMAIN_NOT_WWW] == 'on'){				
 				if(empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off"){
 					if(strpos(DOMAIN, 'beta') !== false){
 						return true;
@@ -390,91 +383,9 @@ class Router extends \yii\db\ActiveRecord
 				}
 				return false;	
 			}
-		}else{
-		if((isset(Yii::$site['other_setting'][DOMAIN.'_ssl']) && cbool(Yii::$site['other_setting'][DOMAIN.'_ssl']) == 1) ||				
-			(isset(Yii::$site['other_setting']['ssl']) && cbool(Yii::$site['other_setting']['ssl']) == 1)){
-			if(empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off"){
-				if(strpos(DOMAIN, 'beta') !== false){
-					return true;
-				}
-				$redirect = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];									
-				header('Location: ' .$redirect, true, 301);
-				exit;
-			}
-			return true;
-		}else{
-			if(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on"){
-				$redirect = 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-				header('Location: ' . $redirect,true , 301);
-				exit;
-			}
-			return false;			
-		}
 		}
 	}
-	
-	private function redirect301(){		 
-		// check redirect domain
-		$rule = '^' . DOMAIN;
-		$r = (new \yii\db\Query())->from('redirects')->where(['rule'=>$rule,'is_active'=>1,'sid'=>__SID__])->one();
-		if(!empty($r) && $r['target'] != "" && $r['target'] != $rule){
-			$url = SCHEME . '://' . substr($r['target'], 1) . URL_PORT . URL_PATH;
-			header('Location: ' . $url,true,$r['code']);
-			exit;
-		}
-		
-		if(!empty($this->slug)){			
-			$s = json_decode($this->slug['redirect'],1);
-			if(isset($s['target']) && $s['target'] != ""){				
-				header('Location: ' . $s['target'],true,$s['code']);
-				exit;				
-			}else{
-				$r = (new \yii\db\Query())->from('redirects')->where(['rule'=>[$this->slug['url'],FULL_URL],'is_active'=>1,'sid'=>__SID__])->one();
-				if(!empty($r) && $r['target'] != ""){					
-					header('Location: ' . $r['target'], true,$r['code']);exit;
-				}
-			}
-		}
-		else{
-			$rule = __DETAIL_URL__ == '' ? '@' : __DETAIL_URL__;
-			$r = (new \yii\db\Query())->from('redirects')->where(['rule'=>[$rule,FULL_URL],'is_active'=>1,'sid'=>__SID__])->one(); 
-			if(!empty($r) && $r['target'] != ""){
-				header('Location: ' . $r['target'],true,$r['code']);
-				exit;
-			}
 			
-		}		 
-	}
-	
-	private function setDefaultLanguage(){
-		/**
-		 * Set language
-		 *
-		 */
-		$config = Yii::$app->session->get('config');
-		defined('ROOT_LANG') or define("ROOT_LANG",'vi_VN');
-		defined('SYSTEM_LANG') or define("SYSTEM_LANG",ROOT_LANG);
-		defined('ADMIN_LANG') or define("ADMIN_LANG",SYSTEM_LANG);
-		if(defined('__URL_LANG__')){
-			defined('__LANG__') or define("__LANG__",__URL_LANG__);
-			defined('DEFAULT_LANG') or define("DEFAULT_LANG",__URL_LANG__);
-		}else{
-			if(!isset($config['language'])){
-				$default_lang = [];//\app\modules\admin\models\AdLanguage::getUserDefaultLanguage();
-				if(empty($default_lang)){
-					$default_lang = ['code'=>'vi_VN','name'=>'Tiếng Việt','country_code'=>'vn'];
-				}
-				$language = ['language'=>$default_lang,'default_language'=>$default_lang];
-				$config = $language;
-				Yii::$app->session->set('config', $config);
-			}else{
-				//$config = $language;
-			}
-			defined('__LANG__') or define("__LANG__",(isset($config['language']['code']) ? $config['language']['code'] : 'vi_VN'));
-			defined('DEFAULT_LANG') or define("DEFAULT_LANG", isset($config['default_language']['code']) ? $config['default_language']['code'] : SYSTEM_LANG);
-				
-		}
-		return __LANG__;
-	}
+	 
 	
 }
