@@ -27,7 +27,9 @@ class Router extends \yii\base\Component
 	public function init(){
 		$this->bootstrap();
 	}
-	
+	/**
+	CKC
+	*/
 	protected function bootstrap(){
 		$this->request = Yii::$app->request;
 		/**
