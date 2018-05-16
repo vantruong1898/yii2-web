@@ -25,25 +25,7 @@ composer require --prefer-dist izisoft/yii2-web "dev-master"
 ### Hướng dẫn sử dụng
 * Thêm đoạn code sau vào components
 ```php
-	'urlManager'=>[
-    	'class' => 'izi\web\UrlManager',
-    	'showScriptName' => false,
-    	'enablePrettyUrl' => true,
-    	'scriptUrl'=>'/index.php',
-    	'rules' => [
-    		'/'=>'site/index',
-    		'<action:\w+>'=>'site/<action>',    						
-    		'<controller:\w+>/<action>'=>'<controller>/<action>'
-            ...
-        ]
-	],
-	'c'=>[
-		'class'=>'izi\web\Currencies'
-	],
-	'l'=>[
-		'class'=>'izi\web\Language'
-	],
-	...
+	:D
   ```
 * Tạo bảng slugs với thông tin cơ bản như sau:
 
