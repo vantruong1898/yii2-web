@@ -28,7 +28,7 @@ class Router extends \yii\base\Component
 		$this->bootstrap();
 	}
 	/**
-	CKC
+	CKC ^^
 	*/
 	protected function bootstrap(){
 		$this->request = Yii::$app->request;

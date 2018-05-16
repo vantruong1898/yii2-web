@@ -277,7 +277,7 @@ class Slug extends \yii\db\ActiveRecord
 	}
 	
 	/**
-	CKC
+	CKC ^^
 	*/
 	public static function getUrl($url = '',$cate_id = 0){
 		$url_link = '';
