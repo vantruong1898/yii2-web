@@ -20,7 +20,11 @@ class Slug extends \yii\db\ActiveRecord
 		return '{{%site_menu}}';
 	}
 	
-	
+ 
+	public static function tableItemToCategory(){
+		return '{{%items_to_category}}';
+	}
+ 
 	public static function tableAdminMenu(){
 		return '{{%admin_menu}}';
 	}
@@ -55,12 +59,16 @@ class Slug extends \yii\db\ActiveRecord
 		}
 		
 		if(!empty($slug)){
-			$s = json_decode($this->slug['redirect'],1);
+ 
+			$s = json_decode($slug['redirect'],1);
+ 
 			if(isset($s['target']) && $s['target'] != ""){
 				header('Location: ' . $s['target'],true,$s['code']);
 				exit;
 			}else{
-				$r = (new \yii\db\Query())->from(self::tableRedirect())->where(['rule'=>[$this->slug['url'],FULL_URL],'is_active'=>1,'sid'=>__SID__])->one();
+ 
+				$r = (new \yii\db\Query())->from(self::tableRedirect())->where(['rule'=>[$slug['url'],FULL_URL],'is_active'=>1,'sid'=>__SID__])->one();
+ 
 				if(!empty($r) && $r['target'] != ""){
 					header('Location: ' . $r['target'], true,$r['code']);exit;
 				}
@@ -124,7 +132,9 @@ class Slug extends \yii\db\ActiveRecord
 	/*
 	 *
 	 */
-	public function getAllParent($id = 0,$inc = true){
+ 
+	public static function getAllParent($id = 0,$inc = true){
+ 
 		$item = (new Query())->from(['site_menu'])->where(['id'=>$id])->one();
 		if(!empty($item)){
 			$query = static::find()->from([$this->tableSiteMenu()])->select(['*'])->where([
@@ -151,7 +161,9 @@ class Slug extends \yii\db\ActiveRecord
 		//
 		switch ($url_type){
 			case 2:
-				return cu(["/$url"],$absolute);
+ 
+				return \yii\helpers\Url::to(["/$url"],$absolute);
+ 
 				break;
 		}
 		//
@@ -161,17 +173,21 @@ class Slug extends \yii\db\ActiveRecord
 				case 3: // 1 dm cha
 					switch ($item['item_type']){
 						case 0: // Menu
-							return cu(["/$url"],$absolute);
+ 
+							return \yii\helpers\Url::to(["/$url"],$absolute);
+ 
 							break;
 						case 1: //
 							$category = \app\modules\admin\models\Content::getItemCategory($item['item_id']);
 							if(!empty($category)){
 								$url = $category['url'] . "/$url";
 							}
-							return cu(["/$url"],$absolute);
+ 
+							return \yii\helpers\Url::to(["/$url"],$absolute);
 							break;
 						default:
-							return cu(["/$url"],$absolute);
+							return \yii\helpers\Url::to(["/$url"],$absolute);
+ 
 							break;
 					}
 					break;
@@ -186,7 +202,9 @@ class Slug extends \yii\db\ActiveRecord
 								}
 							}
 							$url = $x . $url;
-							return cu(["/$url"],$absolute);
+ 
+							return \yii\helpers\Url::to(["/$url"],$absolute);
+ 
 							break;
 						case 1:
 							$category = \app\modules\admin\models\Content::getItemCategory($item['item_id']);
@@ -198,7 +216,9 @@ class Slug extends \yii\db\ActiveRecord
 								}
 							}
 							$url = $x . $url;
-							return cu(["/$url"],$absolute);
+ 
+							return \yii\helpers\Url::to(["/$url"],$absolute);
+ 
 							break;
 					}
 					
@@ -207,7 +227,9 @@ class Slug extends \yii\db\ActiveRecord
 			}
 			
 		}
-		return cu(["/$url"],$absolute);
+ 
+		return \yii\helpers\Url::to(["/$url"],$absolute);
+ 
 	}
 	
 	
@@ -263,38 +285,43 @@ class Slug extends \yii\db\ActiveRecord
 	/**
 	 * Validate url
 	 */
-	public function validateSlug($slug){
+ 
+	public static function validateSlug($slug){
 		if(isset($slug['checksum']) && $slug['checksum'] != ""
 				&& $slug['checksum'] != md5(URL_PATH)){
 			// báo link sai & chuyển về link mới
-			$url1 = $this->getUrl($slug['url']);
+			$url1 = self::getUrl($slug['url']);
+ 
 			if(md5($url1) == $slug['checksum']){
 				Yii::$app->getResponse()->redirect($url1,301);
 			}
 		}
 	}
 	
-	
-	public function getUrl($url = '',$cate_id = 0){
+ 
+	public static function getUrl($url = '',$cate_id = 0){
+ 
 		$url_link = '';
 		
 		$item = static::find()->where(['url'=>$url,'sid'=>__SID__])->andWhere(['>','state',-2])->one();
 				
 		$url_type = isset(Yii::$app->s->config['seo']['url_config']['type']) ? Yii::$app->s->config['seo']['url_config']['type'] : 2;			
 		
+ 
+		$url_type = 3;
+		//
 		if($url_type == 2){
 			return \yii\helpers\Url::to(['/'.$url]);
-			//return cu(['/'.$url]);
+ 
 		}
 		if(!empty($item)){
 			if($item['item_type'] == 0) {// menu
 				$item_id = $item['item_id'];
 			}else{
-				$item_id = $cate_id > 0 ? $cate_id : (new Query())->select('category_id')->from('items_to_category')->where(['item_id'=>$item['item_id']])->scalar();
+ 
+				$item_id = $cate_id > 0 ? $cate_id : static::find()->select('category_id')->from(self::tableItemToCategory())->where(['item_id'=>$item['item_id']])->scalar();
 			}
-			//
-			
-			
+			 
 			switch ($url_type){
 				case 1: // Full
 					$c = [];
@@ -305,23 +332,27 @@ class Slug extends \yii\db\ActiveRecord
 					if($item['item_type'] == 1) {
 						$c[] = $url;
 					}
-					return cu([DS . implode('/', $c)]);
+ 
+					return \yii\helpers\Url::to([DS . implode('/', $c)]);
 					break;
 				case 3: // 1 cate
-					$c = [(new Query())->select('url')->from('site_menu')->where(['id'=>$item_id])->scalar()];
+					$c = [static::find()->select('url')->from(self::tableSiteMenu())->where(['id'=>$item_id])->scalar()];
 					if($item['item_type'] == 1) {
 						$c[] = $url;
 					}
-					return cu([DS . implode('/', $c)]);
+					return \yii\helpers\Url::to(['/' . implode('/', $c)]);
 					break;
 				default:
-					return cu([DS. $item['url']]);
+					return \yii\helpers\Url::to(['/'. $item['url']]);
+
 					break;
 			}
 			
 			
 		}else{
-			return cu([DS. $url]);
+ 
+			return \yii\helpers\Url::to([DS. $url]);
+ 
 		}
 		
 	}

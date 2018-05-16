@@ -27,7 +27,6 @@ class Router extends \yii\base\Component
 	public function init(){
 		$this->bootstrap();
 	}
-	
 	protected function bootstrap(){
 		$this->request = Yii::$app->request;
 		/**
@@ -278,9 +277,9 @@ class Router extends \yii\base\Component
 		/**
 		 * 
 		 */
-		Yii::$app->slug->validateSlug($this->slug); 
-		
-		//view2(Yii::$app->slug->getUrl($this->slug['url']),true);
+ 
+		\izi\web\Slug::validateSlug($this->slug); 
+		  
 		
 		if(isset($this->slug['checksum']) && $this->slug['checksum'] != ""
 				&& $this->slug['checksum'] != md5(URL_PATH)){
@@ -292,12 +291,7 @@ class Router extends \yii\base\Component
 						//$url = 'error';
 					}
 		}
-		//Yii::$app->s->config = Yii::$app->idb->getConfigs();
-		//view2(Yii::$app->s->config,true);
-		
-		//view2(__SID__);
-		//view2($this->slug);
-		//view2($url,true);
+ 
 	}
 		 
 
