@@ -25,7 +25,7 @@ composer require --prefer-dist izisoft/yii2-web "dev-master"
 ### Hướng dẫn sử dụng
 * Thêm đoạn code sau vào components
 ```php
-	<------------------------------>
+	<--------------=.=---------------->
   ```
 * Tạo bảng slugs với thông tin cơ bản như sau:
 
