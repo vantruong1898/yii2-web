@@ -36,5 +36,5 @@ composer require --prefer-dist izisoft/yii2-web "dev-master"
 	(thêm các thông tin khác mà bạn cần khai thác)
 * Tạo bảng currency, bảng language 
 
---- Updating ---
+--- Updating --- 
 	
