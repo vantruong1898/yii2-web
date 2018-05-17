@@ -96,10 +96,10 @@ class Slug extends \yii\db\ActiveRecord
 		return $query->asArray()->all();
 	}
 	
-	public function getItem($url = '', $item_id = 0,$item_type = 0){
-		$query = (new Query())
+	public static function getItem($url = '', $item_id = 0,$item_type = 0){
+		$query = static::find()
 		//->select(['route'])
-		->from($this->tableName())
+		//->from(self::tableName())
 		->where(['sid'=>__SID__]);
 		if($url != '' ){
 			$query->andWhere(['url'=>$url]);
@@ -110,7 +110,12 @@ class Slug extends \yii\db\ActiveRecord
 			$query->andWhere(['item_id'=>$item_id, 'item_type'=>$item_type]);
 		}
 		
-		return $query->one();
+		$item = $query->asArray()->one();
+		if(isset($item['bizrule']) && ($content = json_decode($item['bizrule'],1)) != NULL){
+			$item += $content;
+			unset($item['bizrule']);
+		}
+		return $item;
 	}
 	
 	public function getRoute($url = '', $item_id = 0,$item_type = 0){
@@ -135,9 +140,10 @@ class Slug extends \yii\db\ActiveRecord
  
 	public static function getAllParent($id = 0,$inc = true){
  
-		$item = (new Query())->from(['site_menu'])->where(['id'=>$id])->one();
+		$item = static::find()->from([self::tableSiteMenu()])->where(['id'=>$id])->asArray()->one();
+		
 		if(!empty($item)){
-			$query = static::find()->from([$this->tableSiteMenu()])->select(['*'])->where([
+			$query = static::find()->from([self::tableSiteMenu()])->select(['*'])->where([
 					'<=','lft',$item['lft']
 			])->andWhere([
 					'>=','rgt',$item['rgt']
@@ -150,119 +156,13 @@ class Slug extends \yii\db\ActiveRecord
 		return false;
 	}
 	
-	
-	public function getRealUrl($url, $o = []){
-		//
-		$domain = isset($o['domain']) ? $o['domain'] : '';
-		$absolute = isset($o['absolute']) && $o['absolute'] ? true : false;
-		$url_type = isset($o['url_type']) ? $o['url_type'] : (isset(Yii::$app->s->setting['url_manager']['type']) ? Yii::$app->s->setting['url_manager']['type'] : (
-				isset(Yii::$app->s->config['seo']['url_config']['type']) ?  Yii::$app->s->config['seo']['url_config']['type'] : 2
-				));
-		//
-		switch ($url_type){
-			case 2:
- 
-				return \yii\helpers\Url::to(["/$url"],$absolute);
- 
-				break;
-		}
-		//
-		$item = self::getItem($url);
-		if(!empty($item)){
-			switch ($url_type){
-				case 3: // 1 dm cha
-					switch ($item['item_type']){
-						case 0: // Menu
- 
-							return \yii\helpers\Url::to(["/$url"],$absolute);
- 
-							break;
-						case 1: //
-							$category = \app\modules\admin\models\Content::getItemCategory($item['item_id']);
-							if(!empty($category)){
-								$url = $category['url'] . "/$url";
-							}
- 
-							return \yii\helpers\Url::to(["/$url"],$absolute);
-							break;
-						default:
-							return \yii\helpers\Url::to(["/$url"],$absolute);
- 
-							break;
-					}
-					break;
-				case 1: // Full
-					switch ($item['item_type']){
-						case 0: // menu
-							$categorys = self::getAllParent($item['item_id'],false);
-							$x = '';
-							if(!empty($categorys)){
-								foreach ($categorys as $category){
-									$x .= $category['url'] . '/';
-								}
-							}
-							$url = $x . $url;
- 
-							return \yii\helpers\Url::to(["/$url"],$absolute);
- 
-							break;
-						case 1:
-							$category = \app\modules\admin\models\Content::getItemCategory($item['item_id']);
-							$categorys = self::getAllParent($category['id'],true);
-							$x = '';
-							if(!empty($categorys)){
-								foreach ($categorys as $category){
-									$x .= $category['url'] . '/';
-								}
-							}
-							$url = $x . $url;
- 
-							return \yii\helpers\Url::to(["/$url"],$absolute);
- 
-							break;
-					}
 					
-					
-					break;
-			}
-			
-		}
- 
-		return \yii\helpers\Url::to(["/$url"],$absolute);
- 
-	}
-	
-	
-	public function getDirectLink($url, $item_id, $item_type,$domain = ''){
-		switch ($item_type){
-			case 0: // menu
-				$tables = $this->tableSiteMenu();
-				break;
-			case 1: // bai viết
-				$tables = $this->tableArticle();
-				break;
-			default:
-				if(!(substr($url, 0,1) == '/')){
-					$url = '/' . $url;
-				}
-				return Yii::$app->zii->getDomain($domain) . $url;
-				break;
-		}
-		$c = (new Query())->from($tables)->select('url_link')->where(['id'=>$item_id])->one();
-		//view($c);
-		$url = isset($c['url_link']) ? $c['url_link'] : $url;
-		
-		if(strpos($url, '://')>0){
-			return $url;
-		}
-		if(!(substr($url, 0,1) == '/')){
-			$url = '/' . $url;
-		}
-		return Yii::$app->zii->getDomain($domain) . $url ;
-	}
-	
-	
-	public function getDomain($domain = ''){
+	/**
+	 * Lấy domain đc chỉ định hoặc domain đầu tiên trong danh sách domain của site
+	 * @param string $domain
+	 * @return string|mixed
+	 */
+	public static function getDomain($domain = ''){
 		$s = Yii::$app->s->config['seo'];
 		if($domain == ''){
 			$domains = explode(',', isset($s['domain']) ? $s['domain'] : DOMAIN);
@@ -283,7 +183,7 @@ class Slug extends \yii\db\ActiveRecord
 	}
 	
 	/**
-	 * Validate url
+	 * Kiểm tra url hợp lệ
 	 */
  
 	public static function validateSlug($slug){
@@ -298,62 +198,155 @@ class Slug extends \yii\db\ActiveRecord
 		}
 	}
 	
- 
-	public static function getUrl($url = '',$cate_id = 0){
- 
-		$url_link = '';
+	/**
+	 * Lấy link cố định (đã được tùy chỉnh) của url
+	 * @param unknown $url
+	 * @param number $item_id
+	 * @param unknown $item_type
+	 * @param string $domain
+	 * @return boolean|string
+	 */
+	public function getDirectLink($url, $item_id=0, $item_type=null, $domain = ''){
 		
-		$item = static::find()->where(['url'=>$url,'sid'=>__SID__])->andWhere(['>','state',-2])->one();
-				
-		$url_type = isset(Yii::$app->s->config['seo']['url_config']['type']) ? Yii::$app->s->config['seo']['url_config']['type'] : 2;			
-		
- 
-		$url_type = 3;
-		//
-		if($url_type == 2){
-			return \yii\helpers\Url::to(['/'.$url]);
- 
-		}
-		if(!empty($item)){
-			if($item['item_type'] == 0) {// menu
+		if(!($item_id>0 && $item_type !== null)){
+			$item = $this->getItem($url);
+			if(!empty($item)){
 				$item_id = $item['item_id'];
+				$item_type = $item['item_type'];
 			}else{
- 
-				$item_id = $cate_id > 0 ? $cate_id : static::find()->select('category_id')->from(self::tableItemToCategory())->where(['item_id'=>$item['item_id']])->scalar();
+				return false;
 			}
-			 
-			switch ($url_type){
-				case 1: // Full
-					$c = [];
-					foreach (\app\models\Slugs::getAllParent($item_id) as $k=>$v){
-						//view($v['url']);
-						$c[] = $v['url'];
-					}
-					if($item['item_type'] == 1) {
-						$c[] = $url;
-					}
- 
-					return \yii\helpers\Url::to([DS . implode('/', $c)]);
-					break;
-				case 3: // 1 cate
-					$c = [static::find()->select('url')->from(self::tableSiteMenu())->where(['id'=>$item_id])->scalar()];
-					if($item['item_type'] == 1) {
-						$c[] = $url;
-					}
-					return \yii\helpers\Url::to(['/' . implode('/', $c)]);
-					break;
-				default:
-					return \yii\helpers\Url::to(['/'. $item['url']]);
-
-					break;
-			}
-			
-			
-		}else{
- 
-			return \yii\helpers\Url::to([DS. $url]);
- 
 		}
+		
+		switch ($item_type){
+			case 0: // menu
+				$tables = $this->tableSiteMenu();
+				break;
+			case 1: // bai viết
+				$tables = $this->tableArticle();
+				break;
+			default:
+				if(!(substr($url, 0,1) == '/')){
+					$url = '/' . $url;
+				}
+				return $this->getDomain($domain) . $url;
+				break;
+		}
+		$c = static::find()->from($tables)->select('url_link')->where(['id'=>$item_id])->asArray()->one();
+		
+		$url = isset($c['url_link']) ? $c['url_link'] : $url;
+		
+		if(strpos($url, '://')>0){
+			return $url;
+		}
+		if(!(substr($url, 0,1) == '/')){
+			$url = '/' . $url;
+		}
+		return $this->getDomain($domain) . $url ;
+	}
+	
+	/**
+	 * Lấy link chuẩn theo cấu hình url của site 
+	 * @param string $url
+	 * @param string $absolute
+	 * @return string
+	 */
+	public static function getUrl($url = '',$o = false){
+		
+		$domain = isset($o['domain']) ? $o['domain'] : false;
+		$absolute = isset($o['absolute']) && $o['absolute'] ? true : (!is_array($o) ? $o : false);
+		$url_type = isset($o['url_type']) ? $o['url_type'] : 
+		(isset(Yii::$app->s->setting['url_manager']['type']) ? Yii::$app->s->setting['url_manager']['type'] : 
+		(isset(Yii::$app->s->config['seo']['url_config']['type']) ?  Yii::$app->s->config['seo']['url_config']['type'] : 2));	
+		$url_link = "/$url";
+		if($url_type != 2){
+			$item = self::getItem($url);
+			if(!empty($item)){
+				if($item['item_type'] == 0) {// menu
+					$item_id = $item['item_id'];
+				}else{
+					$item_id = static::find()->select('category_id')->from(self::tableItemToCategory())->where(['item_id'=>$item['item_id']])->scalar();
+				}
+				
+				switch ($url_type){
+					case 1: // Full
+						$c = [];
+						foreach (self::getAllParent($item_id) as $k=>$v){
+							$c[] = $v['url'];
+						}
+						if($item['item_type'] == 1) {
+							$c[] = $url;
+						}						
+						$url_link = "/" . implode('/', $c);
+						break;
+					case 3: // 1 cate
+						$c = [static::find()->select('url')->from(self::tableSiteMenu())->where(['id'=>$item_id])->scalar()];
+						if($item['item_type'] == 1) {
+							$c[] = $url;
+						}
+						$url_link = '/' . implode('/', $c);
+						break;
+					default:
+						$url_link = '/'. $item['url'];						
+						break;
+				}
+				
+				
+			}
+		}
+		if($domain !== false){
+			return self::getDomain($domain) . \yii\helpers\Url::to($url_link);
+		}
+		return \yii\helpers\Url::to([$url_link],$absolute);
+	}
+	
+	
+	public static function getItemCategory($item_id){
+		$item = static::find()		
+		->select('a.*')
+		->from(['a'=>self::tableSiteMenu()])
+		->innerJoin(['b'=>self::tableItemToCategory()],'a.id=b.category_id')->where(['b.item_id'=>$item_id])->asArray()->one();
+		if(isset($item['bizrule']) && ($content = json_decode($item['bizrule'],1)) != NULL){
+			$item += $content;
+			unset($item['bizrule']);
+		}
+		return $item;
+	}
+	
+	public static function getCategory($id){
+		$item = static::find()
+		->select('a.*')
+		->from(['a'=>self::tableSiteMenu()])		
+		->where(['a.id'=>$id])->asArray()->one();
+		if(isset($item['bizrule']) && ($content = json_decode($item['bizrule'],1)) != NULL){
+			$item += $content;
+			unset($item['bizrule']);
+		}
+		return $item;
+	}
+	
+	public static function getRootItem($item = []){
+		if(is_numeric($item)){
+			$item = self::getCategory($item);
+		}
+		
+		if(isset($item['parent_id']) && $item['parent_id'] == 0){
+			return $item;
+		}else{
+			$item = static::find()
+			->select('a.*')
+			->from(['a'=>self::tableSiteMenu()])			
+			->where(['a.sid'=>__SID__,'a.parent_id'=>0])
+			->andWhere(['<','a.lft',$item['lft']])
+			->andWhere(['>','a.rgt',$item['rgt']])
+			->asArray()->one();
+			if(isset($item['bizrule']) && ($content = json_decode($item['bizrule'],1)) != NULL){
+				$item += $content;
+				unset($item['bizrule']);
+			}
+			return $item;			
+		}
+		
 		
 	}
 	

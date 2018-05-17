@@ -3,7 +3,7 @@ namespace izi\web;
 
 use Yii;
 use yii\db\Query;
-class Translate extends yii\base\Object
+class Translate extends \yii\base\Component
 {
 	public $lang = __LANG__;
 	public $t;

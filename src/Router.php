@@ -8,21 +8,24 @@
  */
 namespace izi\web;
 use Yii;
-use yii\db\Query;
 class Router extends \yii\base\Component
 {
 	/*
 	
 	*/
-	public $settings = [], $slug = [];
+	public $settings = [], $slug = [],$allowController = [
+			'index',
+			'default',
+			'ajax',
+			'sajax',
+			'login',
+			'logout',
+			'error',
+			'forgot'
+	];
 	public $_adminRoute = ['admin','acp','apc','cpanel'], $defaultRoute = 'site';
 	private $_router = '';
-	protected $request;
-		 
-	 
-	public static function tableTemplete(){
-	 	return '{{%templetes}}';
-	}
+	protected $request;		 	 
 	
 	public function init(){
 		$this->bootstrap();
@@ -33,6 +36,9 @@ class Router extends \yii\base\Component
 		 * Phân tích dữ liệu từ server header
 		 * 
 		 */
+		Yii::setAlias('@themes', Yii::getAlias('@webroot/themes'));
+		Yii::setAlias('@libs', Yii::getAlias('@web/libs'));
+		
 		$s = $_SERVER;
 		$ssl = (!empty($s['HTTPS']) && $s['HTTPS'] == 'on') ? true:false;
 		$sp = strtolower($s['SERVER_PROTOCOL']);
@@ -61,7 +67,8 @@ class Router extends \yii\base\Component
 				'URL_NON_WWW'=>preg_replace('/www./i','',$a['host'],1),
 				'URL_PORT'=>$port,
 				'URL_PATH'=>$a['path'],
-				
+				'__TIME__'=>time(),
+				'DS' => '/'
 		);
 		foreach($d as $k=>$v){
 			defined($k) or define($k,$v);
@@ -126,6 +133,11 @@ class Router extends \yii\base\Component
 							[
 									'pattern'=>'admin/',
 									'route'=>'admin/',
+									'suffix'=>''
+							],
+							[
+									'pattern'=>'<module:\w+>/',
+									'route'=>'<module:\w+>/',
 									'suffix'=>''
 							],
 							 
@@ -235,7 +247,6 @@ class Router extends \yii\base\Component
 		 */					
 		
 		if(__IS_ADMIN__){
-			//Yii::$app->l->setDefaultLanguage();
 			foreach ($r = $this->_router as $url){ 
 				$this->slug = \app\izi\Slug::adminFindByUrl($url);				
 				break;				 
@@ -254,9 +265,7 @@ class Router extends \yii\base\Component
 				*/
 			}
 			 
-		}else{
-			//Yii::$app->l->setDefaultLanguage();
-		}
+		} 
 				
 		defined('__DETAIL_URL__') or define ('__DETAIL_URL__',$url);
 				
@@ -273,92 +282,238 @@ class Router extends \yii\base\Component
 			
 		}
 		Yii::$app->l->setDefaultLanguage();
-		//view2(\yii\helpers\Url::to(['/abc']));
 		/**
 		 * 
 		 */
  
-		\izi\web\Slug::validateSlug($this->slug); 
-		  
+		\izi\web\Slug::validateSlug($this->slug);		 
 		
 		if(isset($this->slug['checksum']) && $this->slug['checksum'] != ""
 				&& $this->slug['checksum'] != md5(URL_PATH)){
 					// báo link sai
-					$url1 = Yii::$app->zii->getUrl($s['url']);
+					$url1 = \izi\web\Slug::getUrl($s['url']);
 					if(md5($url1) == $s['checksum']){
 						Yii::$app->getResponse()->redirect($url1,301);
 					}else{
 						//$url = 'error';
 					}
 		}
- 
+ 		$this->setHttpsMethod();
+ 		if(__IS_ADMIN__){
+ 			defined('ADMIN_VERSION') or define('ADMIN_VERSION', $this->getAdminVersionCode()) ;
+ 		}
+ 		define ('__DEFAULT_MODULE__',$this->defaultRoute);
+ 		$this->setDetailUrl();
 	}
 		 
-
-	/**
-	 * Get templete name
-	 * @param string $cached
-	 * @return \yii\db\ActiveRecord|array|NULL
-	 */
-	public function getTempleteName($cached =  true){
-		defined('__TEMPLETE_DOMAIN_STATUS__') or define('__TEMPLETE_DOMAIN_STATUS__', 1);
-		$config = Yii::$app->session->get('config');	
-		$c = __SID__ .'_'. PRIVATE_TEMPLETE;
-		//view2($c,true); 
-		if(!YII_DEBUG && isset($config['templete'][$c][__LANG__]['name']) && $config['templete'][$c][__LANG__]['name'] != ""){	
-			return $config['templete'][$c][__LANG__];
-		}else{		
-			$r = [];
-			if(PRIVATE_TEMPLETE>0){
-				$r = static::find()
-				->select(['a.*'])
-				->from(['a'=>'{{%templetes}}'])				 
-				->where(['a.id'=>PRIVATE_TEMPLETE])->asArray()->one();
-				
+	public function setDetailUrl(){
+		$r = $this->slug;
+		//$check_database = false;
+		$private_temp = 0;
+		$controller_style = 0;
+		/**
+		 * 
+		 */
+		$is_detail = false; 
+		if(strlen(__DETAIL_URL__)>0 && !__IS_SUSPENDED__ && !empty($r)){
+			$pos = strpos($r['route'], '/');
+			if($pos !== false){
+				$this->defaultRoute = substr($r['route'], 0,$pos);
 			}
-			if(empty($r)){
-				//
-				$r = static::find()
-				->select(['a.*'])
-				->from(['a'=>'{{%templetes}}'])
-				->innerJoin(['b'=>'{{%temp_to_shop}}'],'a.id=b.temp_id')
-				->where(['b.state'=>__TEMPLETE_DOMAIN_STATUS__,'b.sid'=>__SID__,'b.lang'=>__LANG__])->asArray()->one();						 
-				if(empty($r)){
-					$r = static::find()
-					->select(['a.*'])
-					->from(['a'=>'{{%templetes}}'])
-					->innerJoin(['b'=>'{{%temp_to_shop}}'],'a.id=b.temp_id')
-					->where(['b.state'=>__TEMPLETE_DOMAIN_STATUS__,'b.sid'=>__SID__])->asArray()->one();
+			// Set route[0]
+			$this->_router[0] = $r['route'];
+			
+			// 
+			if(__IS_ADMIN__){
+				if($this->slug['hasChild']){
+					// Set
 				}
-				//
-				if(empty($r) && __TEMPLETE_DOMAIN_STATUS__ > 1){
-					$r = static::find()
-					->select(['a.*'])
-					->from(['a'=>'{{%templetes}}'])
-					->innerJoin(['b'=>'{{%temp_to_shop}}'],'a.id=b.temp_id')
-					->where(['b.state'=>1,'b.sid'=>__SID__,'b.lang'=>__LANG__])->asArray()->one();
-					if(empty($r)){
-						$r = static::find()
-						->select(['a.*'])
-						->from(['a'=>'{{%templetes}}'])
-						->innerJoin(['b'=>'{{%temp_to_shop}}'],'a.id=b.temp_id')
-						->where(['b.state'=>1,'b.sid'=>__SID__])->asArray()->one();
+				define('CONTROLLER_CODE', $r['child_code']);
+			}else{
+				define('__ITEM_ID__', $r['item_id']);
+				define('__ITEM_TYPE__', $r['item_type']);
+				
+				$seo = [];
+				switch (__ITEM_TYPE__){
+					case 1: // Article
+						$is_detail = true;
+						$item = \izi\web\Shop::getArticleDetail(__ITEM_ID__);
+						$r = \izi\web\Slug::getItemCategory(__ITEM_ID__);
+						//
+						Yii::$app->s->item = $item;
+						//
+						if(isset($item['temp_id']) && $item['temp_id']>0){
+							$private_temp = $item['temp_id'];
+						}
+						//
+						if(isset($item['style']) && $item['style']>0){
+							$controller_style = $item['style'];
+						}
+						$root = \izi\web\Slug::getRootItem($r);
+						
+						// Set seo config
+						$seo['title'] = isset($item['seo']['title']) && $item['seo']['title'] != "" ? $item['seo']['title'] : $item['title'];
+						$seo['description'] = isset($item['seo']['description']) && $item['seo']['description'] != "" ?
+						$item['seo']['description'] : (isset($item['info']) && $item['info'] != "" ? $item['info'] :'');						
+						$seo['keyword'] = (isset($item['seo']['focus_keyword']) && $item['seo']['focus_keyword'] != "" ?
+								$item['seo']['focus_keyword'] . ',' : (isset($item['focus_keyword']) && $item['focus_keyword'] != "" ?
+								$item['focus_keyword'] . ',' : '') ) . (isset($item['seo']['keyword']) && $item['seo']['keyword'] != "" ?
+								$item['seo']['keyword'] :'');									
+						$seo['og_image'] = isset($item['icon']) ? $item['icon'] : '';
+						//\izi\web\Shop::setViewedCount(__ITEM_ID__);
+						break;
+					case 0: // Site Menu
+						$is_detail = false;
+						$r = \izi\web\Slug::getCategory(__ITEM_ID__);
+						$root = \izi\web\Slug::getRootItem($r);
+						
+						if($r['route'] == 'manual'){
+							$r['route'] = trim($r['link_target'],'/');
+						}
+						//
+						if(isset($r['temp_id']) && $r['temp_id']>0){
+							$private_temp = $r['temp_id'];
+						}
+						//
+						if(isset($r['style']) && $r['style']>0){
+							$controller_style = $r['style'];
+						}
+						
+						// Set seo
+						$seo['title'] = isset($r['seo']['title']) && $r['seo']['title'] != "" ? $r['seo']['title'] : $r['title'];
+						$seo['description'] = isset($r['seo']['description']) && $r['seo']['description'] != "" ? $r['seo']['description'] :'';
+						
+						$seo['keyword'] = (isset($r['seo']['focus_keyword']) && $r['seo']['focus_keyword'] != "" ?
+						$r['seo']['focus_keyword'] .',' : (isset($r['focus_keyword']) && $r['focus_keyword'] != "" ? $r['focus_keyword'] .',' : ''))
+						. (	isset($r['seo']['keyword']) && $r['seo']['keyword'] != "" ? $r['seo']['keyword'] :'');
+						$seo['og_image'] = isset($r['icon']) ? $r['icon'] : '';
+						
+						break;
+					case 2: // Box
+						$r = \izi\web\Box::getItem(__ITEM_ID__);
+						if(!empty($r)){
+							define('__BOX_ID__', $r['id']);							
+							unset($r['id']);
+							$seo['title'] = $r['title'];
+						}
+						break;
+					case 3: // Box
+						//$r = \app\modules\admin\models\Box::getItem($r['item_id']);
+						//define('__IS_DETAIL__', true);
+						break;
+				}
+				
+				define('__ROOT_CATEGORY_ID__', isset($root['id']) ? $root['id'] : 0);
+				define('__ROOT_CATEGORY_NAME__', isset($root['title']) ? $root['title'] : '');
+				define('__ROOT_CATEGORY_URL__', isset($root['url']) ? $root['url'] : '');				
+				define('CONTROLLER_CODE', $r['route']);
+				
+				if(!empty($seo)){
+					foreach ($seo as $key=>$value){
+						Yii::$app->s->config['seo'][$key] = $value;
 					}
 				}
+				
 			}
-			$config['templete'][$c][__LANG__] = $r;	
-			Yii::$app->session->set('config', $config);
-			return $r;
+			
+			if(isset($r['spc'])){
+				define('__SPC_VALUE__',$r['spc']);
+			}else{
+				define('__SPC_VALUE__',0);
+			}
+			if(isset($r['lft'])){
+				define('CONTROLLER_LFT', $r['lft']);
+				define('CONTROLLER_RGT', $r['rgt']);
+			}
+			define('__CATEGORY_NAME__',isset($r['title']) ? uh($r['title']) : '');
+			define('__CATEGORY_PARENT_ID__', isset($r['parent_id']) ? $r['parent_id'] : 0);
+			define('__CATEGORY_ACTION_DETAIL__',isset($r['action_detail']) ? $r['action_detail'] : '');
+			define('__CATEGORY_URL__', isset($r['url']) ? $r['url'] : '');
+			
+			//view2(__CATEGORY_NAME__,true);
+			
+		}elseif(__IS_SUSPENDED__){
+			$this->defaultRoute = 'site';
+			$this->_router = ['suspended'];
 		}
-	}		
+		
+		if(__IS_ADMIN__ && empty($this->slug) && __DETAIL_URL__ != "" && !in_array($this->_router[0], $this->allowController)){
+			$this->_router = ['error'];
+		}
+		
+		define('__IS_DETAIL__', $is_detail);
+		
+		defined('PRIVATE_TEMPLETE') or define('PRIVATE_TEMPLETE',$private_temp);
+		
+		defined('CONTROLLER_STYLE') or define('CONTROLLER_STYLE',$controller_style);
+		
+		defined('__ITEM_ID__') or define('__ITEM_ID__', 0);
+		
+		define('CONTROLLER_ID', isset($r['id']) ? $r['id'] : -1);
+		
+		defined('__CATEGORY_URL__') or define('__CATEGORY_URL__', __DETAIL_URL__);
+		
+		
+		Yii::$app->request->url = "/" . $this->defaultRoute .'/'. implode('/', $this->_router);
+		define('__CATEGORY_ID__', isset($r['id']) ? $r['id'] : (in_array(Yii::$app->request->url,['/site','/site/','/site/index']) ? 0 : -1));
+		if(URL_SUFFIX != ""){
+			if(strrpos(Yii::$app->request->url, URL_SUFFIX) !== false){
+				//$request->url = str_replace(URL_SUFFIX, '', $request->url);
+			}
+		}
+		if(URL_SUFFIX != "" && $request->url != '/') {
+			if(strpos(Yii::$app->request->url, URL_SUFFIX) === false){
+				Yii::$app->request->url .= URL_SUFFIX;
+			}
+			$ux = explode('/', Yii::$app->request->url);
+			if(count($ux)>4){
+				$nx = [];
+				$nx[] = $ux[0];
+				$nx[] = $ux[1];
+				$nx[] = $ux[2];
+				$nx[] = $ux[count($ux)-1];
+				$request->url = implode('/', $nx);
+				
+			}
+		}
+		
+		Yii::$app->s->category = $r;		
+		
+		define('CHECK_PERMISSION', isset($r['is_permission']) && $r['is_permission'] == 1 ? true : false);
+		 
+		defined('CONTROLLER_TEXT') or define('CONTROLLER_TEXT', __DETAIL_URL__);
+		defined('__RCONTROLLER__') or define('__RCONTROLLER__', __DETAIL_URL__);
+		defined('__CONTROLLER__') or define('__CONTROLLER__', $this->defaultRoute);
+		defined('CONTROLLER') or define('CONTROLLER', !empty($r) ? $r['route'] : 'index');
+		defined('CONTROLLER_CODE') or define('CONTROLLER_CODE', !empty($r) ? $r['route'] : 'index');
+		//
+		define('ROOT_USER','root');
+		define('DEV_USER','dev');
+		define('ADMIN_USER','admin');
+		define('USER','user');
+		
+		\izi\web\Shop::setTemplete();
+		
+	}
+	
+	public function getAdminConfig(){
+		return Yii::$app->idb->getConfigs('ADMIN_CONFIGS');
+	}
+	
+	public function getAdminVersionCode(){
+		$c = $this->getAdminConfig();
+		return isset($c['version']) ? $c['version'] : 'v1';
+		
+	}	
 		 	
 	/**
 	 * Check HTTPS && Redirect
 	 * @return boolean
 	 */
 	private function setHttpsMethod(){
-		if(isset(Yii::$site['seo']['ssl'])){
-			if(isset(Yii::$site['seo']['ssl'][DOMAIN_NOT_WWW])  && Yii::$site['seo']['ssl'][DOMAIN_NOT_WWW] == 'on'){				
+		
+		if(isset(Yii::$app->s->config['seo']['ssl'])){
+			if(isset(Yii::$app->s->config['seo']['ssl'][DOMAIN_NOT_WWW])  && Yii::$app->s->config['seo']['ssl'][DOMAIN_NOT_WWW] == 'on'){				
 				if(empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off"){
 					if(strpos(DOMAIN, 'beta') !== false){
 						return true;
@@ -378,6 +533,27 @@ class Router extends \yii\base\Component
 				return false;	
 			}
 		}
+		
+		//
+		$www = isset(Yii::$app->s->config['seo']['www']) ? Yii::$app->s->config['seo']['www'] : -1;
+		if(!isset(Yii::$app->s->config['seo']['amp'])) {
+			Yii::$app->s->config['seo']['amp'] = [];
+		}
+		switch ($www){
+			case 0:
+				if(strpos(ABSOLUTE_DOMAIN, 'www.') !== false){
+					header('Location:' . SCHEME  . '://' . URL_NON_WWW . URL_PORT . URL_PATH ,301);
+					exit;
+				}
+				break;
+			case 1:
+				if(strpos(ABSOLUTE_DOMAIN, 'www.') === false){
+					header('Location:' . SCHEME  . '://www.' . URL_NON_WWW . URL_PORT . URL_PATH ,301);
+					exit;
+				}
+				break;
+		}
+		//
 	}
 			
 	 
