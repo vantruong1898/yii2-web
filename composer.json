@@ -1,6 +1,6 @@
 {
 	"name" : "izisoft/yii2-web",
-	"description" : "Router for Yii2",
+	"description" : "DB router for Yii2",
 	"type" : "yii2-extension",
 	"version" : "2.0",
 	"license" : "BSD-3-Clause",
