@@ -15,7 +15,7 @@
 		"issues" : "https://github.com/yiisoft/izisoft/yii2-web/issues",		
 		"source" : "https://github.com/yiisoft/izisoft/yii2-web"
 	},
-	"minimum-stability" : "dev",
+	"minimum-stability" : "dev-master",
 	"require" : {
 		"php" : ">=5.4.0"
 	},
